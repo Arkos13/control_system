@@ -1,12 +1,12 @@
 doctrine:
     dbal:
         # configure these for your database server
-        driver: 'pdo_mysql'
-        server_version: '5.7'
-        charset: utf8mb4
+        driver: 'pdo_pgsql'
+        server_version: '11.2'
+        charset: utf8
         default_table_options:
-            charset: utf8mb4
-            collate: utf8mb4_unicode_ci
+            charset: utf8
+            collate: -
 
         url: '%env(resolve:DATABASE_URL)%'
     orm:
@@ -14,9 +14,9 @@ doctrine:
         naming_strategy: doctrine.orm.naming_strategy.underscore
         auto_mapping: true
         mappings:
-            App:
+            User:
                 is_bundle: false
                 type: annotation
-                dir: '%kernel.project_dir%/src/Entity'
-                prefix: 'App\Entity'
-                alias: App
+                dir: '%kernel.project_dir%/src/Model/User/Entity'
+                prefix: 'App\Model\User\Entity'
+                alias: User
