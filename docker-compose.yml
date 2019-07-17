@@ -16,6 +16,9 @@ services:
             dockerfile: php-fpm.docker
         volumes:
             - ./manager:/app
+        depends_on:
+            - manager-postgres
+            - mailer
     manager-php-cli:
         build:
             context: ./manager/docker/development
@@ -24,6 +27,9 @@ services:
             - ./manager:/app
             - composer:/root/.composer/cache
         tty: true
+        depends_on:
+            - manager-postgres
+            - mailer
     manager-postgres:
         image: postgres:11.2-alpine
         volumes:
@@ -34,6 +40,10 @@ services:
             POSTGRES_DB: app
         ports:
             - "54321:5432"
+    mailer:
+        image: mailhog/mailhog
+        ports:
+            - "8081:8025"
 
 volumes:
     manager-postgres:
