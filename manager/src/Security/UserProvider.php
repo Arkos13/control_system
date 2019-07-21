@@ -6,6 +6,7 @@ namespace App\Security;
 
 use App\ReadModel\User\AuthView;
 use App\ReadModel\User\UserFetcher;
+use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\Exception\UsernameNotFoundException;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\User\UserProviderInterface;
@@ -22,13 +23,17 @@ class UserProvider implements UserProviderInterface
     public function loadUserByUsername($username): UserInterface
     {
         $user = $this->loadUser($username);
-        return self::identityByUser($user);
+        return self::identityByUser($user, $username);
     }
 
     public function refreshUser(UserInterface $identity): UserInterface
     {
+        if (!$identity instanceof UserIdentity) {
+            throw new UnsupportedUserException('Invalid user class ' . \get_class($identity));
+        }
+
         $user = $this->loadUser($identity->getUsername());
-        return self::identityByUser($user);
+        return self::identityByUser($user, $identity->getUsername());
     }
 
     public function supportsClass($class): bool
@@ -38,18 +43,24 @@ class UserProvider implements UserProviderInterface
 
     private function loadUser($username): AuthView
     {
-        if (!$user = $this->users->findForAuth($username)) {
-            throw new UsernameNotFoundException('');
+        $chunks = explode(':', $username);
+        if (\count($chunks) === 2 && $user = $this->users->findForAuthByNetwork($chunks[0], $chunks[1])) {
+            return $user;
         }
-        return $user;
+
+
+        if ($user = $this->users->findForAuthByEmail($username)) {
+            return $user;
+        }
+        throw new UsernameNotFoundException('');
     }
 
-    private static function identityByUser(AuthView $user): UserIdentity
+    private static function identityByUser(AuthView $user, string $username): UserIdentity
     {
         return new UserIdentity(
             $user->id,
-            $user->email,
-            $user->password_hash,
+            $username,
+            $user->password_hash ?: '',
             $user->role,
             $user->status
         );
