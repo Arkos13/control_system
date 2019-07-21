@@ -1,3 +1,4 @@
+/.ready
 ###> symfony/framework-bundle ###
 /.env.local
 /.env.local.php
@@ -10,4 +11,11 @@
 ###> symfony/phpunit-bridge ###
 /bin/.phpunit
 /phpunit.xml
-###< symfony/phpunit-bridge ### 
+###< symfony/phpunit-bridge ###
+
+###> symfony/webpack-encore-bundle ###
+/node_modules/
+/public/build/
+npm-debug.log
+yarn-error.log
+###< symfony/webpack-encore-bundle ###
