@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Controller\Auth;
 
 use App\Model\User\UseCase\SignUp\Request\Handler as RequestHandler;
-use App\Model\User\UseCase\SignUp\Confirm\Handler as ConfirmHandler;
+use App\Model\User\UseCase\SignUp\Confirm\ByToken\Handler as ConfirmHandler;
 use App\Model\User\UseCase\SignUp\Request\Command as RequestCommand;
-use App\Model\User\UseCase\SignUp\Confirm\Command as ConfirmCommand;
+use App\Model\User\UseCase\SignUp\Confirm\ByToken\Command as ConfirmCommand;
 use App\Model\User\UseCase\SignUp\Request\Form as RequestForm;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -35,7 +35,6 @@ class SignUpController extends AbstractController
         $command = new RequestCommand();
         $form = $this->createForm(RequestForm::class, $command);
         $form->handleRequest($request);
-
         if ($form->isSubmitted() && $form->isValid()) {
             try {
                 $handler->handle($command);
