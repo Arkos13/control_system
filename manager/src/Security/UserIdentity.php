@@ -13,6 +13,7 @@ class UserIdentity implements UserInterface, EquatableInterface
     private $id;
     private $username;
     private $password;
+    private $display;
     private $role;
     private $status;
 
@@ -20,6 +21,7 @@ class UserIdentity implements UserInterface, EquatableInterface
         string $id,
         string $username,
         string $password,
+        string $display,
         string $role,
         string $status
     )
@@ -27,6 +29,7 @@ class UserIdentity implements UserInterface, EquatableInterface
         $this->id = $id;
         $this->username = $username;
         $this->password = $password;
+        $this->display = $display;
         $this->role = $role;
         $this->status = $status;
     }
@@ -35,6 +38,12 @@ class UserIdentity implements UserInterface, EquatableInterface
     {
         return $this->id;
     }
+
+    public function getDisplay(): string
+    {
+        return $this->display;
+    }
+
     public function getUsername(): string
     {
         return $this->username;
@@ -72,7 +81,6 @@ class UserIdentity implements UserInterface, EquatableInterface
 
         return
             $this->id === $user->id &&
-            $this->username === $user->username &&
             $this->password === $user->password &&
             $this->role === $user->role &&
             $this->status === $user->status;

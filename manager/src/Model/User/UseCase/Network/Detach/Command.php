@@ -2,31 +2,28 @@
 
 declare(strict_types=1);
 
-namespace App\Model\User\UseCase\Network\Auth;
+namespace App\Model\User\UseCase\Network\Detach;
 
 class Command
 {
     /**
      * @var string
      */
+    public $user;
+
+    /**
+     * @var string
+     */
     public $network;
+
     /**
      * @var string
      */
     public $identity;
 
-    /**
-     * @var string
-     */
-    public $firstName;
-
-    /**
-     * @var string
-     */
-    public $lastName;
-
-    public function __construct(string $network, string $identity)
+    public function __construct(string $user, string $network, string $identity)
     {
+        $this->user = $user;
         $this->network = $network;
         $this->identity = $identity;
     }
