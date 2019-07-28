@@ -9,6 +9,7 @@ class Role
 {
     public const USER = 'ROLE_USER';
     public const ADMIN = 'ROLE_ADMIN';
+    public const MANAGE_USERS = 'ROLE_MANAGE_USERS';
 
     private $name;
 
@@ -17,6 +18,7 @@ class Role
         Assert::oneOf($name, [
             self::USER,
             self::ADMIN,
+            self::MANAGE_USERS,
         ]);
         $this->name = $name;
     }

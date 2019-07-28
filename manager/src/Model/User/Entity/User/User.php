@@ -17,8 +17,9 @@ use Doctrine\ORM\Mapping as ORM;
  */
 class User
 {
-    private const STATUS_WAIT = 'wait';
+    public const STATUS_WAIT = 'wait';
     public const STATUS_ACTIVE = 'active';
+    public const STATUS_BLOCKED = 'blocked';
 
     /**
      * @ORM\Column(type="user_user_id")
@@ -70,7 +71,7 @@ class User
 
     /**
      * @var Role
-     * @ORM\Column(type="user_user_role", length=16)
+     * @ORM\Column(type="user_user_role", length=25)
      */
     private $role;
 
@@ -98,6 +99,15 @@ class User
         $this->name = $name;
         $this->role = Role::user();
         $this->networks = new ArrayCollection();
+    }
+
+    public static function create(Id $id, \DateTimeImmutable $date, Name $name, Email $email, string $hash): self
+    {
+        $user = new self($id, $date, $name);
+        $user->email = $email;
+        $user->passwordHash = $hash;
+        $user->status = self::STATUS_ACTIVE;
+        return $user;
     }
 
     public function getId(): Id
@@ -128,6 +138,11 @@ class User
     public function isActive(): bool
     {
         return $this->status === self::STATUS_ACTIVE;
+    }
+
+    public function isBlocked(): bool
+    {
+        return $this->status === self::STATUS_BLOCKED;
     }
 
     public function getConfirmToken(): ?string
@@ -251,6 +266,11 @@ class User
         return $this->name;
     }
 
+    public function getStatus(): string
+    {
+        return $this->status;
+    }
+
     public function changeRole(Role $role): void
     {
         if ($this->role->isEqual($role)) {
@@ -293,6 +313,28 @@ class User
         if ($this->resetToken->isEmpty()) {
             $this->resetToken = null;
         }
+    }
+
+    public function activate(): void
+    {
+        if ($this->isActive()) {
+            throw new \DomainException('User is already active.');
+        }
+        $this->status = self::STATUS_ACTIVE;
+    }
+
+    public function block(): void
+    {
+        if ($this->isBlocked()) {
+            throw new \DomainException('User is already blocked.');
+        }
+        $this->status = self::STATUS_BLOCKED;
+    }
+
+    public function edit(Email $email, Name $name): void
+    {
+        $this->name = $name;
+        $this->email = $email;
     }
 
 }
