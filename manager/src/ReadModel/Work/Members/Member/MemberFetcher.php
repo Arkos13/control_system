@@ -68,7 +68,7 @@ class MemberFetcher
         if (!\in_array($sort, ['name', 'email', 'group', 'status'], true)) {
             throw new \UnexpectedValueException('Cannot sort by ' . $sort);
         }
-        $qb->orderBy('"' . $sort . '"', $direction === 'desc' ? 'desc' : 'asc');
+        $qb->orderBy($sort, $direction === 'desc' ? 'desc' : 'asc');
         return $this->paginator->paginate($qb, $page, $size);
     }
 
