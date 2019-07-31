@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Model\User\Entity\User\User;
 use App\ReadModel\User\UserFetcher;
+use App\ReadModel\Work\Members\Member\MemberFetcher;
 use Psr\Log\LoggerInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -231,11 +232,13 @@ class UsersController extends AbstractController
     /**
      * @Route("/{id}", name=".show")
      * @param User $user
+     * @param MemberFetcher $members
      * @return Response
      */
-    public function show(User $user): Response
+    public function show(User $user, MemberFetcher $members): Response
     {
-        return $this->render('app/users/show.html.twig', compact('user'));
+        $member = $members->find($user->getId()->getValue());
+        return $this->render('app/users/show.html.twig', compact('user', 'member'));
     }
 
 }
