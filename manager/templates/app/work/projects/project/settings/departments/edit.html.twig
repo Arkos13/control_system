@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Projects{% endblock %}
+{% block title %}{{ department.name }}{% endblock %}
 
 {% block breadcrumbs %}
     <ol class="breadcrumb">
@@ -9,6 +9,8 @@
         <li class="breadcrumb-item"><a href="{{ path('work.projects') }}">Projects</a></li>
         <li class="breadcrumb-item"><a href="{{ path('work.projects.project.show', {'id': project.id}) }}">{{ project.name }}</a></li>
         <li class="breadcrumb-item"><a href="{{ path('work.projects.project.settings', {'project_id': project.id}) }}">Settings</a></li>
+        <li class="breadcrumb-item"><a href="{{ path('work.projects.project.settings.departments', {'project_id': project.id}) }}">Departments</a></li>
+        <li class="breadcrumb-item"><a href="{{ path('work.projects.project.settings.departments.show', {'project_id': project.id, 'id': department.id}) }}">{{ department.name }}</a></li>
         <li class="breadcrumb-item active">Edit</li>
     </ol>
 {% endblock %}
@@ -17,12 +19,16 @@
 
     {% include 'app/work/projects/project/_tabs.html.twig' %}
     {% include 'app/work/projects/project/settings/_tabs.html.twig' %}
+    <h2>{{ department.name }}</h2>
+
     <div class="card">
         <div class="card-body">
 
             {{ form_start(form) }}
             {{ form_widget(form) }}
-            <button type="submit" class="btn btn-primary">Save</button>
+            <div>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </div>
             {{ form_end(form) }}
 
         </div>
