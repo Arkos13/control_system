@@ -22,7 +22,8 @@ class RoleFetcher
             ->select(
                 'r.id',
                 'r.name',
-                'r.permissions'
+                'r.permissions',
+                '(SELECT COUNT(*) FROM work_projects_project_membership_roles m WHERE m.role_id = r.id) AS memberships_count'
             )
             ->from('work_projects_roles', 'r')
             ->orderBy('name')
@@ -32,5 +33,18 @@ class RoleFetcher
                 'permissions' => json_decode($role['permissions'], true)
             ]);
         }, $stmt->fetchAll(FetchMode::ASSOCIATIVE));
+    }
+
+    public function allList(): array
+    {
+        $stmt = $this->connection->createQueryBuilder()
+            ->select(
+                'id',
+                'name'
+            )
+            ->from('work_projects_roles')
+            ->orderBy('name')
+            ->execute();
+        return $stmt->fetchAll(\PDO::FETCH_KEY_PAIR);
     }
 }
