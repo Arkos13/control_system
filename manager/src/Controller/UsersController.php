@@ -29,11 +29,11 @@ class UsersController extends AbstractController
 {
     private const PER_PAGE = 10;
 
-    private $logger;
+    private $errors;
 
-    public function __construct(LoggerInterface $logger)
+    public function __construct(ErrorHandler $errors)
     {
-        $this->logger = $logger;
+        $this->errors = $errors;
     }
 
     /**
@@ -78,7 +78,7 @@ class UsersController extends AbstractController
                 $handler->handle($command);
                 return $this->redirectToRoute('users');
             } catch (\DomainException $e) {
-                $this->logger->warning($e->getMessage(), ['exception' => $e]);
+                $this->errors->handle($e);
                 $this->addFlash('error', $e->getMessage());
             }
         }
@@ -110,7 +110,7 @@ class UsersController extends AbstractController
                 $handler->handle($command);
                 return $this->redirectToRoute('users.show', ['id' => $user->getId()]);
             } catch (\DomainException $e) {
-                $this->logger->warning($e->getMessage(), ['exception' => $e]);
+                $this->errors->handle($e);
                 $this->addFlash('error', $e->getMessage());
             }
         }
@@ -144,7 +144,7 @@ class UsersController extends AbstractController
                 $handler->handle($command);
                 return $this->redirectToRoute('users.show', ['id' => $user->getId()]);
             } catch (\DomainException $e) {
-                $this->logger->warning($e->getMessage(), ['exception' => $e]);
+                $this->errors->handle($e);
                 $this->addFlash('error', $e->getMessage());
             }
         }
@@ -171,7 +171,7 @@ class UsersController extends AbstractController
         try {
             $handler->handle($command);
         } catch (\DomainException $e) {
-            $this->logger->warning($e->getMessage(), ['exception' => $e]);
+            $this->errors->handle($e);
             $this->addFlash('error', $e->getMessage());
         }
         return $this->redirectToRoute('users.show', ['id' => $user->getId()]);
@@ -193,7 +193,7 @@ class UsersController extends AbstractController
         try {
             $handler->handle($command);
         } catch (\DomainException $e) {
-            $this->logger->warning($e->getMessage(), ['exception' => $e]);
+            $this->errors->handle($e);
             $this->addFlash('error', $e->getMessage());
         }
         return $this->redirectToRoute('users.show', ['id' => $user->getId()]);
@@ -221,7 +221,7 @@ class UsersController extends AbstractController
         try {
             $handler->handle($command);
         } catch (\DomainException $e) {
-            $this->logger->warning($e->getMessage(), ['exception' => $e]);
+            $this->errors->handle($e);
             $this->addFlash('error', $e->getMessage());
         }
         return $this->redirectToRoute('users.show', ['id' => $user->getId()]);

@@ -8,8 +8,8 @@ use App\Annotation\Guid;
 use App\Model\Work\Entity\Members\Member\Id;
 use App\Model\Work\Entity\Projects\Project\Project;
 use App\Model\Work\UseCase\Projects\Project\Membership;
-use App\Security\Voter\Work\ProjectAccess;
-use Psr\Log\LoggerInterface;
+use App\Security\Voter\Work\Projects\ProjectAccess;
+use App\Controller\ErrorHandler;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,11 +22,11 @@ use Symfony\Component\Routing\Annotation\Route;
  */
 class MembersController extends AbstractController
 {
-    private $logger;
+    private $errors;
 
-    public function __construct(LoggerInterface $logger)
+    public function __construct(ErrorHandler $errors)
     {
-        $this->logger = $logger;
+        $this->errors = $errors;
     }
 
     /**
@@ -65,7 +65,7 @@ class MembersController extends AbstractController
                 $handler->handle($command);
                 return $this->redirectToRoute('work.projects.project.settings.members', ['project_id' => $project->getId()]);
             } catch (\DomainException $e) {
-                $this->logger->warning($e->getMessage(), ['exception' => $e]);
+                $this->errors->handle($e);
                 $this->addFlash('error', $e->getMessage());
             }
         }
@@ -95,7 +95,7 @@ class MembersController extends AbstractController
                 $handler->handle($command);
                 return $this->redirectToRoute('work.projects.project.settings.members', ['project_id' => $project->getId()]);
             } catch (\DomainException $e) {
-                $this->logger->warning($e->getMessage(), ['exception' => $e]);
+                $this->errors->handle($e);
                 $this->addFlash('error', $e->getMessage());
             }
         }
@@ -124,7 +124,7 @@ class MembersController extends AbstractController
         try {
             $handler->handle($command);
         } catch (\DomainException $e) {
-            $this->logger->warning($e->getMessage(), ['exception' => $e]);
+            $this->errors->handle($e);
             $this->addFlash('error', $e->getMessage());
         }
         return $this->redirectToRoute('work.projects.project.settings.members', ['project_id' => $project->getId()]);

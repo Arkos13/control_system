@@ -11,9 +11,8 @@ use App\Model\Work\UseCase\Projects\Project\Department\Create;
 use App\Model\Work\UseCase\Projects\Project\Department\Edit;
 use App\Model\Work\UseCase\Projects\Project\Department\Remove;
 use App\ReadModel\Work\Projects\Project\DepartmentFetcher;
-use App\Security\Voter\Work\ProjectAccess;
-use Psr\Log\LoggerInterface;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
+use App\Security\Voter\Work\Projects\ProjectAccess;
+use App\Controller\ErrorHandler;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -26,11 +25,11 @@ use Symfony\Component\Routing\Annotation\Route;
  */
 class DepartmentsController extends AbstractController
 {
-    private $logger;
+    private $errors;
 
-    public function __construct(LoggerInterface $logger)
+    public function __construct(ErrorHandler $errors)
     {
-        $this->logger = $logger;
+        $this->errors = $errors;
     }
 
     /**
@@ -66,7 +65,7 @@ class DepartmentsController extends AbstractController
                 $handler->handle($command);
                 return $this->redirectToRoute('work.projects.project.settings.departments', ['project_id' => $project->getId()]);
             } catch (\DomainException $e) {
-                $this->logger->warning($e->getMessage(), ['exception' => $e]);
+                $this->errors->handle($e);
                 $this->addFlash('error', $e->getMessage());
             }
         }
@@ -96,7 +95,7 @@ class DepartmentsController extends AbstractController
                 $handler->handle($command);
                 return $this->redirectToRoute('work.projects.project.settings.departments.show', ['project_id' => $project->getId(), 'id' => $id]);
             } catch (\DomainException $e) {
-                $this->logger->warning($e->getMessage(), ['exception' => $e]);
+                $this->errors->handle($e);
                 $this->addFlash('error', $e->getMessage());
             }
         }
@@ -126,7 +125,7 @@ class DepartmentsController extends AbstractController
         try {
             $handler->handle($command);
         } catch (\DomainException $e) {
-            $this->logger->warning($e->getMessage(), ['exception' => $e]);
+            $this->errors->handle($e);
             $this->addFlash('error', $e->getMessage());
         }
         return $this->redirectToRoute('work.projects.project.settings.departments', ['project_id' => $project->getId()]);
