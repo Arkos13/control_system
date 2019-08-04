@@ -7,7 +7,6 @@ namespace App\Controller;
 use App\Model\User\Entity\User\User;
 use App\ReadModel\User\UserFetcher;
 use App\ReadModel\Work\Members\Member\MemberFetcher;
-use Psr\Log\LoggerInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;

@@ -9,6 +9,7 @@
         "ext-json": "^1.6",
         "doctrine/doctrine-fixtures-bundle": "^3.2",
         "finesse/swiftmailer-defaults-plugin": "^2.0",
+        "fzaninotto/faker": "^1.8",
         "knplabs/knp-menu-bundle": "dev-master",
         "knplabs/knp-paginator-bundle": "^4.0",
         "knpuniversity/oauth2-client-bundle": "^1.28",
