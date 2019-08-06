@@ -26,7 +26,7 @@ class Form extends AbstractType
             $executors[$item['group']][$item['name']] = $item['id'];
         }
         $builder
-            ->add('name', Type\TextType::class, ['required' => false, 'attr' => [
+            ->add('text', Type\TextType::class, ['required' => false, 'attr' => [
                 'placeholder' => 'Search...',
                 'onchange' => 'this.form.submit()',
             ]])
