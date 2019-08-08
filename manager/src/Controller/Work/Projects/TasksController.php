@@ -29,6 +29,8 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use App\Service\Uploader\FileUploader;
+use App\Model\Work\UseCase\Projects\Task\Files;
 
 /**
  * @Route("/work/projects/tasks", name="work.projects.tasks")
@@ -160,6 +162,71 @@ class TasksController extends AbstractController
             'task' => $task,
             'form' => $form->createView(),
         ]);
+    }
+
+    /**
+     * @Route("/{id}/files", name=".files")
+     * @param Task $task
+     * @param Request $request
+     * @param Files\Add\Handler $handler
+     * @param FileUploader $uploader
+     * @return Response
+     */
+    public function files(Task $task, Request $request, Files\Add\Handler $handler, FileUploader $uploader): Response
+    {
+        $this->denyAccessUnlessGranted(TaskAccess::MANAGE, $task);
+        $command = new Files\Add\Command($task->getId()->getValue(), $this->getUser()->getId());
+        $form = $this->createForm(Files\Add\Form::class, $command);
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            $files = [];
+            foreach ($form->get('files')->getData() as $file) {
+                $uploaded = $uploader->upload($file);
+                $files[] = new Files\Add\File(
+                    $uploaded->getPath(),
+                    $uploaded->getName(),
+                    $uploaded->getSize()
+                );
+            }
+            $command->files = $files;
+            try {
+                $handler->handle($command);
+                return $this->redirectToRoute('work.projects.tasks.show', ['id' => $task->getId()]);
+            } catch (\DomainException $e) {
+                $this->errors->handle($e);
+                $this->addFlash('error', $e->getMessage());
+            }
+        }
+        return $this->render('app/work/projects/tasks/files.html.twig', [
+            'project' => $task->getProject(),
+            'task' => $task,
+            'form' => $form->createView(),
+        ]);
+    }
+
+    /**
+     * @Route("/{id}/files/{file_id}/delete", name=".files.delete", methods={"POST"})
+     * @ParamConverter("member", options={"id" = "member_id"})
+     * @param Task $task
+     * @param string $file_id
+     * @param Request $request
+     * @param Files\Remove\Handler $handler
+     * @return Response
+     */
+    public function fileDelete(Task $task, string $file_id, Request $request, Files\Remove\Handler $handler): Response
+    {
+        if (!$this->isCsrfTokenValid('revoke', $request->request->get('token'))) {
+            return $this->redirectToRoute('work.projects.tasks.show', ['id' => $task->getId()]);
+        }
+        $this->denyAccessUnlessGranted(TaskAccess::MANAGE, $task);
+        $command = new Files\Remove\Command($task->getId()->getValue(), $file_id);
+        try {
+            $handler->handle($command);
+        } catch (\DomainException $e) {
+            $this->errors->handle($e);
+            $this->addFlash('error', $e->getMessage());
+        }
+        return $this->redirectToRoute('work.projects.tasks.show', ['id' => $task->getId()]);
     }
 
     /**

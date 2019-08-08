@@ -10,6 +10,9 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Webmozart\Assert\Assert;
 use App\Model\Work\Entity\Members\Member\Id as MemberId;
 use Doctrine\ORM\Mapping as ORM;
+use App\Model\Work\Entity\Projects\Task\File\File;
+use App\Model\Work\Entity\Projects\Task\File\Id as FileId;
+use App\Model\Work\Entity\Projects\Task\File\Info;
 
 /**
  * @ORM\Entity()
@@ -118,6 +121,13 @@ class Task
      */
     private $executors;
 
+    /**
+     * @var ArrayCollection|File[]
+     * @ORM\OneToMany(targetEntity="App\Model\Work\Entity\Projects\Task\File\File", mappedBy="task", orphanRemoval=true, cascade={"all"})
+     * @ORM\OrderBy({"date" = "ASC"})
+     */
+    private $files;
+
     public function __construct(
         Id $id,
         Project $project,
@@ -135,11 +145,28 @@ class Task
         $this->date = $date;
         $this->name = $name;
         $this->content = $content;
+        $this->files = new ArrayCollection();
         $this->progress = 0;
         $this->type = $type;
         $this->priority = $priority;
         $this->status = Status::new();
         $this->executors = new ArrayCollection();
+    }
+
+    public function addFile(FileId $id, Member $member, \DateTimeImmutable $date, Info $info): void
+    {
+        $this->files->add(new File($this, $id, $member, $date, $info));
+    }
+
+    public function removeFile(FileId $id): void
+    {
+        foreach ($this->files as $current) {
+            if ($current->getId()->isEqual($id)) {
+                $this->files->removeElement($current);
+                return;
+            }
+        }
+        throw new \DomainException('File is not found.');
     }
 
     public function edit(string $name, ?string $content): void
@@ -346,5 +373,13 @@ class Task
     public function getEndDate(): ?\DateTimeImmutable
     {
         return $this->endDate;
+    }
+
+    /**
+     * @return File[]
+     */
+    public function getFiles(): array
+    {
+        return $this->files->toArray();
     }
 }
