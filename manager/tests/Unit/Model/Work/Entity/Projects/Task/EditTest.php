@@ -19,6 +19,8 @@ class EditTest extends TestCase
         $project = (new ProjectBuilder())->build();
         $task = (new TaskBuilder())->build($project, $member);
         $task->edit(
+            $member,
+            new \DateTimeImmutable(),
             $name = 'New Name',
             $content = 'New Content'
         );

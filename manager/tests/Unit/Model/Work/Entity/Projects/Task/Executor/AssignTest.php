@@ -20,7 +20,7 @@ class AssignTest extends TestCase
         $task = (new TaskBuilder())->build($project, $member);
         $executor = (new MemberBuilder())->build($group);
         self::assertFalse($task->hasExecutor($executor->getId()));
-        $task->assignExecutor($executor);
+        $task->assignExecutor($member, new \DateTimeImmutable(), $executor);
         self::assertEquals([$executor], $task->getExecutors());
         self::assertTrue($task->hasExecutor($executor->getId()));
     }
@@ -32,8 +32,8 @@ class AssignTest extends TestCase
         $project = (new ProjectBuilder())->build();
         $task = (new TaskBuilder())->build($project, $member);
         $executor = (new MemberBuilder())->build($group);
-        $task->assignExecutor($executor);
+        $task->assignExecutor($member, new \DateTimeImmutable(), $executor);
         $this->expectExceptionMessage('Executor is already assigned.');
-        $task->assignExecutor($executor);
+        $task->assignExecutor($member, new \DateTimeImmutable(), $executor);
     }
 }

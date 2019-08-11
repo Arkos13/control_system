@@ -23,9 +23,9 @@ class AddTest extends TestCase
         $task = (new TaskBuilder())->build($project, $author);
         $member = (new MemberBuilder())->build($group);
         $task->addFile(
-            $id = Id::next(),
             $member,
             $date = new \DateTimeImmutable('+1 day'),
+            $id = Id::next(),
             $info = new Info('path', 'name.jpg', 356)
         );
         self::assertCount(1, $files = $task->getFiles());

@@ -19,9 +19,9 @@ class SetRootTest extends TestCase
         $project = (new ProjectBuilder())->build();
         $task = (new TaskBuilder())->build($project, $member);
         $parent = (new TaskBuilder())->build($project, $member);
-        $task->setChildOf($parent);
+        $task->setChildOf($member, new \DateTimeImmutable(), $parent);
         self::assertEquals($parent, $task->getParent());
-        $task->setRoot();
+        $task->setRoot($member, new \DateTimeImmutable());
         self::assertNull($task->getParent());
     }
 }
