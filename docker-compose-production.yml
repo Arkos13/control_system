@@ -13,7 +13,8 @@ services:
         environment:
             APP_SECRET: ${MANAGER_APP_SECRET}
             DATABASE_URL: pgsql://app:${MANAGER_DB_PASSWORD}@manager-postgres:5432/app
-            REDIS_URL: tcp://manager-redis:6379?password=${MANAGER_REDIS_PASSWORD}
+            REDIS_HOST: manager-redis
+            REDIS_PASSWORD: ${MANAGER_REDIS_PASSWORD}
             MAILER_URL: ${MANAGER_MAILER_URL}
             OAUTH_FACEBOOK_SECRET: ${MANAGER_OAUTH_FACEBOOK_SECRET}
             STORAGE_BASE_URL: ${STORAGE_BASE_URL}
@@ -21,16 +22,22 @@ services:
             STORAGE_FTP_USERNAME: ${STORAGE_FTP_USERNAME}
             STORAGE_FTP_PASSWORD: ${STORAGE_FTP_PASSWORD}
             MESSENGER_TRANSPORT_DSN: redis://manager-redis:6379/messages?password=${MANAGER_REDIS_PASSWORD}
+            CENTRIFUGO_WS_HOST: ${CENTRIFUGO_WS_HOST}
+            CENTRIFUGO_API_HOST: http://centrifugo:8000
+            CENTRIFUGO_API_KEY: ${CENTRIFUGO_API_KEY}
+            CENTRIFUGO_SECRET: ${CENTRIFUGO_SECRET}
         depends_on:
             - manager-postgres
             - manager-redis
             - manager-queue-redis
+            - centrifugo
     manager-php-cli:
         image: ${REGISTRY_ADDRESS}/manager-php-cli:${IMAGE_TAG}
         environment:
             APP_SECRET: ${MANAGER_APP_SECRET}
             DATABASE_URL: pgsql://app:${MANAGER_DB_PASSWORD}@manager-postgres:5432/app
-            REDIS_URL: tcp://manager-redis:6379?password=${MANAGER_REDIS_PASSWORD}
+            REDIS_HOST: manager-redis
+            REDIS_PASSWORD: ${MANAGER_REDIS_PASSWORD}
             MAILER_URL: ${MANAGER_MAILER_URL}
             OAUTH_FACEBOOK_SECRET: ${MANAGER_OAUTH_FACEBOOK_SECRET}
             STORAGE_BASE_URL: ${STORAGE_BASE_URL}
@@ -38,16 +45,22 @@ services:
             STORAGE_FTP_USERNAME: ${STORAGE_FTP_USERNAME}
             STORAGE_FTP_PASSWORD: ${STORAGE_FTP_PASSWORD}
             MESSENGER_TRANSPORT_DSN: redis://manager-queue-redis:6379/messages
+            CENTRIFUGO_WS_HOST: ${CENTRIFUGO_WS_HOST}
+            CENTRIFUGO_API_HOST: http://centrifugo:8000
+            CENTRIFUGO_API_KEY: ${CENTRIFUGO_API_KEY}
+            CENTRIFUGO_SECRET: ${CENTRIFUGO_SECRET}
         depends_on:
             - manager-postgres
             - manager-redis
             - manager-queue-redis
+            - centrifugo
     manager-queue-worker:
         image: ${REGISTRY_ADDRESS}/manager-php-cli:${IMAGE_TAG}
         environment:
             APP_SECRET: ${MANAGER_APP_SECRET}
             DATABASE_URL: pgsql://app:${MANAGER_DB_PASSWORD}@manager-postgres:5432/app
-            REDIS_URL: tcp://manager-redis:6379?password=${MANAGER_REDIS_PASSWORD}
+            REDIS_HOST: manager-redis
+            REDIS_PASSWORD: ${MANAGER_REDIS_PASSWORD}
             MAILER_URL: ${MANAGER_MAILER_URL}
             OAUTH_FACEBOOK_SECRET: ${MANAGER_OAUTH_FACEBOOK_SECRET}
             STORAGE_BASE_URL: ${STORAGE_BASE_URL}
@@ -55,10 +68,15 @@ services:
             STORAGE_FTP_USERNAME: ${STORAGE_FTP_USERNAME}
             STORAGE_FTP_PASSWORD: ${STORAGE_FTP_PASSWORD}
             MESSENGER_TRANSPORT_DSN: redis://manager-queue-redis:6379/messages
+            CENTRIFUGO_WS_HOST: ${CENTRIFUGO_WS_HOST}
+            CENTRIFUGO_API_HOST: http://centrifugo:8000
+            CENTRIFUGO_API_KEY: ${CENTRIFUGO_API_KEY}
+            CENTRIFUGO_SECRET: ${CENTRIFUGO_SECRET}
         depends_on:
             - manager-postgres
             - manager-redis
             - manager-queue-redis
+            - centrifugo
         command: sh -c "sleep 30 && php bin/console messenger:consume async -vv"
     manager-postgres:
         image: ${REGISTRY_ADDRESS}/manager-postgres:${IMAGE_TAG}
@@ -69,11 +87,32 @@ services:
             POSTGRES_PASSWORD: ${MANAGER_DB_PASSWORD}
             POSTGRES_DB: app
     manager-redis:
-        image: redis:3.0-alpine
+        image: redis:5.0-alpine
         restart: always
         volumes:
             - manager-redis:/data
-        command: redis-server --requirepass ${MANAGER_REDIS_PASSWORD}
+        command:
+            - 'redis-server'
+            - '--databases 2'
+            - '--save 900 1'
+            - '--save 300 10'
+            - '--save 60 10000'
+            - '--requirepass ${MANAGER_REDIS_PASSWORD}'
+    manager-queue-redis:
+        image: redis:5.0-alpine
+        volumes:
+            - manager-queue-redis:/data
+    centrifugo:
+        image: ${REGISTRY_ADDRESS}/centrifugo:${IMAGE_TAG}
+        ulimits:
+            nofile:
+                soft: 65536
+                hard: 65536
+        environment:
+            CENTRIFUGO_SECRET: ${CENTRIFUGO_SECRET}
+            CENTRIFUGO_API_KEY: ${CENTRIFUGO_API_KEY}
+        ports:
+            - "8000:8000"
 volumes:
     manager-postgres:
     manager-redis:

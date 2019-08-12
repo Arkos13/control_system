@@ -72,10 +72,16 @@ services:
         ports:
             - "54321:5432"
     manager-redis:
-        image: redis:3.0-alpine
+        image: redis:5.0-alpine
         volumes:
             - manager-redis:/data
-        command: redis-server --requirepass secret
+        command:
+            - 'redis-server'
+            - '--databases 2'
+            - '--save 900 1'
+            - '--save 300 10'
+            - '--save 60 10000'
+            - '--requirepass secret'
     storage:
         build:
             context: ./storage/docker/development
@@ -100,6 +106,20 @@ services:
         image: mailhog/mailhog
         ports:
             - "8082:8025"
+    centrifugo:
+        image: centrifugo/centrifugo:v2.2
+        ulimits:
+            nofile:
+                soft: 65536
+                hard: 65536
+        environment:
+            CENTRIFUGO_SECRET: secret
+            CENTRIFUGO_API_KEY: secret
+        volumes:
+            - ./manager/docker/development/centrifugo:/centrifugo
+        ports:
+            - "8083:8000"
+        command: centrifugo --admin --admin_insecure
 
 volumes:
     manager-postgres:

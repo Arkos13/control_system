@@ -2,6 +2,9 @@
     "cebe/markdown": {
         "version": "1.2.1"
     },
+    "centrifugal/phpcent": {
+        "version": "3.0.1"
+    },
     "doctrine/annotations": {
         "version": "1.0",
         "recipe": {
@@ -213,9 +216,6 @@
     },
     "phpdocumentor/type-resolver": {
         "version": "0.4.0"
-    },
-    "predis/predis": {
-        "version": "v1.1.1"
     },
     "psr/cache": {
         "version": "1.0.1"
