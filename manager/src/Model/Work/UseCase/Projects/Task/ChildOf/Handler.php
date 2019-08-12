@@ -33,6 +33,6 @@ class Handler
         } else {
             $task->setRoot($actor, new \DateTimeImmutable());
         }
-        $this->flusher->flush();
+        $this->flusher->flush($task);
     }
 }
