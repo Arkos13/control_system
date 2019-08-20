@@ -54,7 +54,7 @@ class ProjectFetcher
         }
 
         if ($filter->name) {
-            $qb->andWhere($qb->expr()->like('p.name', ':name'));
+            $qb->andWhere($qb->expr()->like('LOWER(p.name)', ':name'));
             $qb->setParameter(':name', '%' . mb_strtolower($filter->name) . '%');
         }
 
@@ -63,7 +63,7 @@ class ProjectFetcher
             $qb->setParameter(':status', $filter->status);
         }
 
-        if (!\in_array($sort, ['name', 'status'], true)) {
+        if (!\in_array($sort, ['sort', 'name', 'status'], true)) {
             throw new \UnexpectedValueException('Cannot sort by ' . $sort);
         }
         $qb->orderBy($sort, $direction === 'desc' ? 'desc' : 'asc');

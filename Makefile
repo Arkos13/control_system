@@ -20,7 +20,7 @@ docker-pull:
 docker-build:
 	docker-compose build
 
-manager-init: manager-composer-install manager-assets-install manager-wait-db manager-migrations manager-fixtures manager-ready
+manager-init: manager-composer-install manager-assets-install manager-oauth-keys manager-wait-db manager-migrations manager-fixtures manager-ready
 
 manager-clear:
 	docker run --rm -v ${PWD}/manager:/app --workdir=/app alpine rm -f .ready
@@ -52,6 +52,12 @@ manager-test-unit:
 
 manager-assets-dev:
 	docker-compose run --rm manager-node npm run dev
+
+manager-oauth-keys:
+	docker-compose run --rm manager-php-cli mkdir -p var/oauth
+	docker-compose run --rm manager-php-cli openssl genrsa -out var/oauth/private.key 2048
+	docker-compose run --rm manager-php-cli openssl rsa -in var/oauth/private.key -pubout -out var/oauth/public.key
+	docker-compose run --rm manager-php-cli chmod 644 var/oauth/private.key var/oauth/public.key
 
 build-production:
 	docker build --pull --file=manager/docker/production/nginx.docker --tag ${REGISTRY_ADDRESS}/manager-nginx:${IMAGE_TAG} manager
