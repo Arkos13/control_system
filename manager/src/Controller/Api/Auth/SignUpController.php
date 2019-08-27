@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Api\Auth;
 
-use App\Controller\ErrorHandler;
+use OpenApi\Annotations as OA;
 use App\Model\User\UseCase\SignUp;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -26,6 +26,29 @@ class SignUpController extends AbstractController
     }
 
     /**
+     * @OA\Post(
+     *     path="/auth/signup",
+     *     tags={"Sign Up"},
+     *     @OA\RequestBody(
+     *         @OA\JsonContent(
+     *             type="object",
+     *             required={"first_name", "last_name", "email", "password"},
+     *             @OA\Property(property="first_name", type="string"),
+     *             @OA\Property(property="last_name", type="string"),
+     *             @OA\Property(property="email", type="string"),
+     *             @OA\Property(property="password", type="string"),
+     *         ),
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Success response",
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Errors",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorModel")
+     *     ),
+     * )
      * @Route("/auth/signup", name="auth.signup", methods={"POST"})
      * @param Request $request
      * @param SignUp\Request\Handler $handler

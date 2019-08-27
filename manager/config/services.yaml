@@ -83,8 +83,10 @@ services:
 
     cebe\markdown\MarkdownExtra:
 
-    App\Service\Work\Processor\Driver\:
-        resource: '../src/Service/Work/Processor/Driver/*Driver.php'
+    App\Service\Work\Processor\Driver\MemberDriver:
+        tags: ['app.twig.work_processor.driver']
+
+    App\Service\Work\Processor\Driver\TaskDriver:
         tags: ['app.twig.work_processor.driver']
 
     App\Service\Work\Processor\Processor:

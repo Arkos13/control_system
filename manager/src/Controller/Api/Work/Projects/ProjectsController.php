@@ -13,6 +13,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
+use OpenApi\Annotations as OA;
 
 class ProjectsController extends AbstractController
 {
@@ -26,6 +27,39 @@ class ProjectsController extends AbstractController
     }
 
     /**
+     * @OA\Get(
+     *     path="/work/projects",
+     *     tags={"Work Projects"},
+     *     @OA\Parameter(
+     *         name="filter[name]",
+     *         in="query",
+     *         required=false,
+     *         @OA\Schema(type="string"),
+     *         style="form"
+     *     ),
+     *     @OA\Parameter(
+     *         name="filter[status]",
+     *         in="query",
+     *         required=false,
+     *         @OA\Schema(type="string"),
+     *         style="form"
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Success response",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="items", type="array", @OA\Items(
+     *                 type="object",
+     *                 @OA\Property(property="id", type="string"),
+     *                 @OA\Property(property="name", type="string"),
+     *                 @OA\Property(property="status", type="string"),
+     *             )),
+     *             @OA\Property(property="pagination", ref="#/components/schemas/Pagination"),
+     *         )
+     *     ),
+     *     security={{"oauth2": {"common"}}}
+     * )
      * @Route("/work/projects", name="work.projects", methods={"GET"})
      * @param Request $request
      * @param ProjectFetcher $fetcher

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Twig\Extension\Work;
 
-use App\Service\Work\Processor\Driver\Driver;
+use App\Service\Work\Processor\Driver\ProcessorDriver;
 use App\Service\Work\Processor\Processor;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFilter;
@@ -12,7 +12,7 @@ use Twig\TwigFilter;
 class ProcessorExtension extends AbstractExtension
 {
     /**
-     * @var Driver[]
+     * @var ProcessorDriver[]
      */
     private $processor;
 

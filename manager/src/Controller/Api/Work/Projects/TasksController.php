@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Api\Work\Projects;
 
+use App\Controller\Api\PaginationSerializer;
 use App\Model\Work\Entity\Members\Member\Member;
 use App\Model\Work\Entity\Projects\Task\File\File;
 use App\Model\Work\Entity\Projects\Task\Task;
@@ -12,6 +13,8 @@ use App\ReadModel\Work\Projects\Action\ActionFetcher;
 use App\ReadModel\Work\Projects\Action\Feed\Feed;
 use App\ReadModel\Work\Projects\Action\Feed\Item;
 use App\ReadModel\Work\Projects\Task\CommentFetcher;
+use App\ReadModel\Work\Projects\Task\Filter;
+use App\ReadModel\Work\Projects\Task\TaskFetcher;
 use App\Security\Voter\Work\Projects\TaskAccess;
 use App\Service\Gravatar;
 use App\Service\Uploader\FileUploader;
@@ -22,24 +25,207 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Serializer\Exception\ExceptionInterface;
+use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use OpenApi\Annotations as OA;
 
 /**
  * @Route("/work/tasks", name="work.projects.tasks")
  */
 class TasksController extends AbstractController
 {
+    private const PER_PAGE = 50;
+
     private $serializer;
+    private $denormalizer;
     private $validator;
 
-    public function __construct(SerializerInterface $serializer, ValidatorInterface $validator)
+    public function __construct(SerializerInterface $serializer,
+                                DenormalizerInterface $denormalizer,
+                                ValidatorInterface $validator)
     {
         $this->serializer = $serializer;
+        $this->denormalizer = $denormalizer;
         $this->validator = $validator;
     }
 
     /**
+     * @OA\Get(
+     *     path="/work/tasks",
+     *     tags={"Work Task"},
+     *     @OA\Parameter(
+     *         name="filter[author]",
+     *         in="query",
+     *         required=false,
+     *         @OA\Schema(type="string"),
+     *         style="form"
+     *     ),
+     *     @OA\Parameter(
+     *         name="filter[text]",
+     *         in="query",
+     *         required=false,
+     *         @OA\Schema(type="string"),
+     *         style="form"
+     *     ),
+     *     @OA\Parameter(
+     *         name="filter[type]",
+     *         in="query",
+     *         required=false,
+     *         @OA\Schema(type="string"),
+     *         style="form"
+     *     ),
+     *     @OA\Parameter(
+     *         name="filter[status]",
+     *         in="query",
+     *         required=false,
+     *         @OA\Schema(type="string"),
+     *         style="form"
+     *     ),
+     *     @OA\Parameter(
+     *         name="filter[priority]",
+     *         in="query",
+     *         required=false,
+     *         @OA\Schema(type="string"),
+     *         style="form"
+     *     ),
+     *     @OA\Parameter(
+     *         name="filter[executor]",
+     *         in="query",
+     *         required=false,
+     *         @OA\Schema(type="string"),
+     *         style="form"
+     *     ),
+     *     @OA\Parameter(
+     *         name="filter[roots]",
+     *         in="query",
+     *         required=false,
+     *         @OA\Schema(type="string"),
+     *         style="form"
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Success response",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="items", type="array", @OA\Items(
+     *                 @OA\Property(property="id", type="integer"),
+     *                 @OA\Property(property="project", type="object",
+     *                     @OA\Property(property="id", type="string"),
+     *                     @OA\Property(property="name", type="string"),
+     *                 ),
+     *                 @OA\Property(property="author", type="object",
+     *                     @OA\Property(property="id", type="string"),
+     *                     @OA\Property(property="name", type="string"),
+     *                 ),
+     *                 @OA\Property(property="date", type="string"),
+     *                 @OA\Property(property="plan_date", type="string", nullable=true),
+     *                 @OA\Property(property="start_date", type="string", nullable=true),
+     *                 @OA\Property(property="end_date", type="string", nullable=true),
+     *                 @OA\Property(property="name", type="string"),
+     *                 @OA\Property(property="parent", type="string"),
+     *                 @OA\Property(property="type", type="string"),
+     *                 @OA\Property(property="progress", type="integer"),
+     *                 @OA\Property(property="priority", type="integer"),
+     *                 @OA\Property(property="status", type="string"),
+     *                 @OA\Property(property="executors", type="array", @OA\Items(
+     *                     type="object",
+     *                     @OA\Property(property="name", type="string"),
+     *                 )),
+     *             )),
+     *             @OA\Property(property="pagination", ref="#/components/schemas/Pagination"),
+     *         )
+     *     ),
+     *     security={{"oauth2": {"common"}}}
+     * )
+     * @Route("", name="", methods={"GET"})
+     * @param Request $request
+     * @param TaskFetcher $fetcher
+     * @return Response
+     * @throws ExceptionInterface
+     */
+    public function index(Request $request, TaskFetcher $fetcher): Response
+    {
+        if ($this->isGranted('ROLE_WORK_MANAGE_PROJECTS')) {
+            $filter = Filter\Filter::all();
+        } else {
+            $filter = Filter\Filter::all()->forMember($this->getUser()->getId());
+        }
+        /** @var Filter\Filter $filter */
+        $filter = $this->denormalizer->denormalize($request->query->get('filter', []), Filter\Filter::class, 'array', [
+            'object_to_populate' => $filter,
+            'ignored_attributes' => ['member', 'project'],
+        ]);
+        $pagination = $fetcher->all(
+            $filter,
+            $request->query->getInt('page', 1),
+            self::PER_PAGE,
+            $request->query->get('sort'),
+            $request->query->get('direction')
+        );
+        return $this->json([
+            'items' => array_map(static function (array $item) {
+                return [
+                    'id' => $item['id'],
+                    'project' => [
+                        'id' => $item['project_id'],
+                        'name' => $item['project_name'],
+                    ],
+                    'author' => [
+                        'id' => $item['author_id'],
+                        'name' => $item['author_name'],
+                    ],
+                    'date' => $item['date'],
+                    'plan_date' => $item['plan_date'],
+                    'parent' => $item['parent'],
+                    'name' => $item['name'],
+                    'type' => $item['type'],
+                    'progress' => $item['progress'],
+                    'priority' => $item['priority'],
+                    'status' => $item['status'],
+                    'executors'=> array_map(static function (array $member) {
+                        return [
+                            'name' => $member['name'],
+                        ];
+                    }, $item['executors']),
+                ];
+            }, (array)$pagination->getItems()),
+            'pagination' => PaginationSerializer::toArray($pagination),
+        ]);
+    }
+
+    /**
+     * @OA\Put(
+     *     path="/work/tasks/{id}/plan",
+     *     tags={"Work Task"},
+     *     @OA\Parameter(
+     *         in="path",
+     *         name="id",
+     *         required=true,
+     *         @OA\Schema(
+     *             type="integer",
+     *             format="int64"
+     *         )
+     *     ),
+     *     @OA\RequestBody(
+     *         @OA\JsonContent(
+     *             type="object",
+     *             required={"date"},
+     *             @OA\Property(property="date", type="string"),
+     *         ),
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Success response",
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Errors",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorModel")
+     *     ),
+     *     security={{"oauth2": {"common"}}}
+     * )
      * @Route("/{id}/plan", name=".plan", methods={"PUT"})
      * @param Task $task
      * @param Request $request
@@ -63,6 +249,29 @@ class TasksController extends AbstractController
     }
 
     /**
+     * @OA\Delete(
+     *     path="/work/tasks/{id}/plan",
+     *     tags={"Work Task"},
+     *     @OA\Parameter(
+     *         in="path",
+     *         name="id",
+     *         required=true,
+     *         @OA\Schema(
+     *             type="integer",
+     *             format="int64"
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=204,
+     *         description="Success response",
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Errors",
+     *          @OA\JsonContent(ref="#/components/schemas/ErrorModel")
+     *     ),
+     *     security={{"oauth2": {"common"}}}
+     * )
      * @Route("/{id}/plan", name=".plan.delete", methods={"DELETE"})
      * @param Task $task
      * @param Plan\Remove\Handler $handler
@@ -77,6 +286,119 @@ class TasksController extends AbstractController
     }
 
     /**
+     * @OA\Get(
+     *     path="/work/tasks/{id}",
+     *     tags={"Work Task"},
+     *     @OA\Parameter(
+     *         in="path",
+     *         name="id",
+     *         required=true,
+     *         @OA\Schema(
+     *             type="integer",
+     *             format="int64"
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Success response",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="id", type="integer"),
+     *             @OA\Property(property="project", type="object",
+     *                 @OA\Property(property="id", type="string"),
+     *                 @OA\Property(property="name", type="string"),
+     *             ),
+     *             @OA\Property(property="author", type="object",
+     *                 @OA\Property(property="id", type="string"),
+     *                 @OA\Property(property="name", type="string"),
+     *                 @OA\Property(property="avatar", type="string"),
+     *             ),
+     *             @OA\Property(property="date", type="string"),
+     *             @OA\Property(property="plan_date", type="string", nullable=true),
+     *             @OA\Property(property="start_date", type="string", nullable=true),
+     *             @OA\Property(property="end_date", type="string", nullable=true),
+     *             @OA\Property(property="name", type="string"),
+     *             @OA\Property(property="content", type="string"),
+     *             @OA\Property(property="files", type="array", @OA\Items(
+     *                 type="object",
+     *                 @OA\Property(property="id", type="string"),
+     *                 @OA\Property(property="name", type="string"),
+     *                 @OA\Property(property="member", type="object",
+     *                     @OA\Property(property="id", type="string"),
+     *                     @OA\Property(property="name", type="string"),
+     *                 ),
+     *                 @OA\Property(property="info", type="object",
+     *                     @OA\Property(property="url", type="string"),
+     *                     @OA\Property(property="name", type="string"),
+     *                     @OA\Property(property="size", type="integer"),
+     *                 ),
+     *             )),
+     *             @OA\Property(property="type", type="string"),
+     *             @OA\Property(property="progress", type="integer"),
+     *             @OA\Property(property="priority", type="integer"),
+     *             @OA\Property(property="parent", type="object", nullable=true,
+     *                 @OA\Property(property="url", type="string"),
+     *                 @OA\Property(property="name", type="string")
+     *             ),
+     *             @OA\Property(property="status", type="string"),
+     *             @OA\Property(property="executors", type="array", @OA\Items(
+     *                 type="object",
+     *                 @OA\Property(property="id", type="string"),
+     *                 @OA\Property(property="name", type="string"),
+     *                 @OA\Property(property="avatar", type="string"),
+     *             )),
+     *             @OA\Property(property="feed", type="array", @OA\Items(
+     *                 type="object",
+     *                 @OA\Property(property="date", type="string"),
+     *                 @OA\Property(property="action", type="object", nullable=true,
+     *                     @OA\Property(property="id", type="string"),
+     *                     @OA\Property(property="date", type="string"),
+     *                     @OA\Property(property="actor", type="object",
+     *                         @OA\Property(property="id", type="string"),
+     *                         @OA\Property(property="name", type="string"),
+     *                     ),
+     *                     @OA\Property(property="set", type="object",
+     *                         @OA\Property(property="project", type="object", nullable=true,
+     *                             @OA\Property(property="id", type="string"),
+     *                             @OA\Property(property="name", type="string"),
+     *                         ),
+     *                         @OA\Property(property="name", type="string", nullable=true),
+     *                         @OA\Property(property="content", type="string", nullable=true),
+     *                         @OA\Property(property="file", type="string", nullable=true),
+     *                         @OA\Property(property="removed_file", type="string", nullable=true),
+     *                         @OA\Property(property="parent", type="string", nullable=true),
+     *                         @OA\Property(property="removed_parent", type="boolean", nullable=true),
+     *                         @OA\Property(property="type", type="string", nullable=true),
+     *                         @OA\Property(property="status", type="string", nullable=true),
+     *                         @OA\Property(property="progress", type="integer", nullable=true),
+     *                         @OA\Property(property="priority", type="integer", nullable=true),
+     *                         @OA\Property(property="plan", type="string", nullable=true),
+     *                         @OA\Property(property="removed_plan", type="boolean", nullable=true),
+     *                         @OA\Property(property="executor", type="object", nullable=true,
+     *                             @OA\Property(property="id", type="string"),
+     *                             @OA\Property(property="name", type="string"),
+     *                         ),
+     *                         @OA\Property(property="revoked_executor", type="object", nullable=true,
+     *                             @OA\Property(property="id", type="string"),
+     *                             @OA\Property(property="name", type="string"),
+     *                         ),
+     *                     ),
+     *                 ),
+     *                 @OA\Property(property="comment", type="object", nullable=true,
+     *                     @OA\Property(property="id", type="string"),
+     *                     @OA\Property(property="date", type="string"),
+     *                     @OA\Property(property="author", type="object",
+     *                         @OA\Property(property="id", type="string"),
+     *                         @OA\Property(property="name", type="string"),
+     *                         @OA\Property(property="avatar", type="string"),
+     *                     ),
+     *                     @OA\Property(property="content", type="string"),
+     *                 ),
+     *             )),
+     *         )
+     *     ),
+     *     security={{"oauth2": {"common"}}}
+     * )
      * @Route("/{id}", name=".show", requirements={"id"="\d+"}))
      * @param Task $task
      * @param CommentFetcher $comments
@@ -149,7 +471,7 @@ class TasksController extends AbstractController
                     'name' => $member->getName()->getFull(),
                     'avatar' => Gravatar::url($member->getEmail()->getValue(), 100),
                 ];
-            }, $task->getFiles()),
+            }, $task->getExecutors()),
             'feed' => array_map(static function (Item $item) use ($markdown, $purifier, $processor) {
                 $action = $item->getAction();
                 $comment = $item->getComment();
@@ -163,10 +485,10 @@ class TasksController extends AbstractController
                             'name' => $action['actor_name'],
                         ],
                         'set' => [
-                            'project' => [
+                            'project' => $action['set_project_id'] ? [
                                 'id' => $action['set_project_id'],
                                 'name' => $action['set_project_name'],
-                            ],
+                            ] : null,
                             'name' => $action['set_name'],
                             'content' => $action['set_content'],
                             'file' => $action['set_file_id'],
@@ -179,14 +501,14 @@ class TasksController extends AbstractController
                             'priority' => $action['set_priority'],
                             'plan' => $action['set_plan'],
                             'removed_plan' => $action['set_removed_plan'],
-                            'executor' => [
+                            'executor' => $action['set_executor_id'] ? [
                                 'id' => $action['set_executor_id'],
                                 'name' => $action['set_executor_name'],
-                            ],
-                            'revoked_executor' => [
+                            ] : null,
+                            'revoked_executor' => $action['set_revoked_executor_id'] ? [
                                 'id' => $action['set_revoked_executor_id'],
                                 'name' => $action['set_revoked_executor_name'],
-                            ],
+                            ] : null,
                         ],
                     ] : null,
                     'comment' => $comment ? [
